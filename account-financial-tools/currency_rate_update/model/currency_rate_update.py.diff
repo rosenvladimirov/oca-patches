@@ -1,0 +1,105 @@
+diff --git a/currency_rate_update/model/currency_rate_update.py b/currency_rate_update/model/currency_rate_update.py
+index 2ff20ce..e99c2fd 100644
+--- a/currency_rate_update/model/currency_rate_update.py
++++ b/currency_rate_update/model/currency_rate_update.py
+@@ -122,6 +122,20 @@ PL_NBP_supported_currency_array = [
+     "LTL", "MXN", "MYR", "NOK", "NZD", "PHP", "PLN", "RON", "RUB", "SEK",
+     "SGD", "THB", "TRY", "UAH", "USD", "XDR", "ZAR"]
+ 
++BG_CSTMS_supported_currency_array = [
++    "AUD", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "GBP", "HKD", "HRK",
++    "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
++    "PHP", "PLN", "RON", "RUB", "SEK", "SGD", "THB", "TRY", "USD", "ZAR",
++    "EUR"
++    ]
++BG_SIBANK_supported_currency_array = [
++    "USD", "EUR", "CHF", "DKK", "GBP", "JPY", "NOK", "RON", "RUB", "SEK"
++    ]
++
++BG_UNICRD_supported_currency_array = [
++    "EUR", "GBP", "CHF", "USD"
++    ]
++
+ supported_currecies = {
+     'YAHOO_getter': YAHOO_supported_currency_array,
+     'ECB_getter': ECB_supported_currency_array,
+@@ -130,9 +144,11 @@ supported_currecies = {
+     'CH_ADMIN_getter': CH_ADMIN_supported_currency_array,
+     'MX_BdM_getter': MX_BdM_supported_currency_array,
+     'PL_NBP_getter': PL_NBP_supported_currency_array,
++    'BG_CUSTOMS_getter': BG_CSTMS_supported_currency_array,
++    'BG_SIBANK_getter': BG_SIBANK_supported_currency_array,
++    'BG_UNICRDT_getter': BG_UNICRD_supported_currency_array,
+     }
+ 
+-
+ class Currency_rate_update_service(models.Model):
+     """Class keep services and currencies that
+     have to be updated"""
+@@ -194,7 +210,11 @@ class Currency_rate_update_service(models.Model):
+          #  (Thailand, Malaysia, Mexico...)
+          ('CA_BOC_getter', 'Bank of Canada - noon rates'),
+          # Added for romanian rates
+-         ('RO_BNR_getter', 'National Bank of Romania')
++         ('RO_BNR_getter', 'National Bank of Romania'),
++         # Added for bulgarian rates of central, statiscs (customs) and buy and sell from two bank
++         ('BG_CUSTOMS_getter','Bulgarian customs rate for taxes'),
++         ('BG_SIBANK_getter', 'bulgarian SiBank bay and sell currency rates'),
++         ('BG_UNICRDT_getter', 'bulgarian Unicredit Bulbank bay and sell currency rates'),
+          ],
+         string="Webservice to use",
+         required=True)
+@@ -269,6 +289,7 @@ class Currency_rate_update_service(models.Model):
+                 # We initalize the class that will handle the request
+                 # and return a dict of rate
+                 getter = factory.register(self.service)
++                _logger.info("Execute %s: -> %s" % (getter, self.currency_to_update))
+                 curr_to_fetch = map(lambda x: x.name,
+                                     self.currency_to_update)
+                 res, log_info = getter.get_updated_currency(
+@@ -284,16 +305,38 @@ class Currency_rate_update_service(models.Model):
+                         continue
+                     do_create = True
+                     for rate in curr.rate_ids:
+-                        if rate.name == rate_name:
+-                            rate.rate = res[curr.name]
++                       if rate.name == rate_name:
++                            vals = {
++                                'rate': res['rate'][curr.name],
++                                'rate_buy':  res['rate_buy'] and res['rate_buy'][curr.name] or 0,
++                                'rate_sell': res['rate_sell'] and res['rate_sell'][curr.name] or 0,
++                                'rate_statistics': res['rate_statistics'] and res['rate_statistics'][curr.name] or 0,
++                                'name': rate_name,
++                                'currency_id': rate.currency_id
++                                }
++                            do_create = False
++                       elif rate.rate == res['rate'][curr.name]:
++                            vals = {
++                                'rate':        res['rate'][curr.name],
++                                'name':        rate_name,
++                                'currency_id': rate.currency_id
++                                }
++                            rate_obj.write(vals)
++                            _logger.info(
++                                'Updated currency %s via service %s',
++                            curr.name, self.service)
+                             do_create = False
++                       else:
++                            vals = {
++                                'rate':      res['rate'][curr.name],
++                                'rate_buy':  res['rate_buy'] and res['rate_buy'][curr.name] or 0,
++                                'rate_sell': res['rate_sell'] and res['rate_sell'][curr.name] or 0,
++                                'rate_statistics': res['rate_statistics'] and res['rate_statistics'][curr.name] or 0,
++                                'name':            rate_name
++                                }
++                            do_create = True
+                             break
+                     if do_create:
+-                        vals = {
+-                            'currency_id': curr.id,
+-                            'rate': res[curr.name],
+-                            'name': rate_name
+-                        }
+                         rate_obj.create(vals)
+                         _logger.info(
+                             'Updated currency %s via service %s',

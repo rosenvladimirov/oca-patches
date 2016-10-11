@@ -1,0 +1,14 @@
+diff --git a/currency_rate_update/services/currency_getter.py b/currency_rate_update/services/currency_getter.py
+index 833d89d..8388dc7 100644
+--- a/currency_rate_update/services/currency_getter.py
++++ b/currency_rate_update/services/currency_getter.py
+@@ -71,6 +71,9 @@ class Currency_getter_factory():
+             'MX_BdM_getter',
+             'CA_BOC_getter',
+             'RO_BNR_getter',
++            'BG_CUSTOMS_getter',
++            'BG_SIBANK_getter',
++            'BG_UNICRDT_getter',
+         ]
+         if class_name in allowed:
+             exec "from .update_service_%s import %s" % \

@@ -1,0 +1,19 @@
+diff --git a/currency_rate_date_check/currency_rate_date_check.py b/currency_rate_date_check/currency_rate_date_check.py
+index 1bff5d9..a9772b2 100644
+--- a/currency_rate_date_check/currency_rate_date_check.py
++++ b/currency_rate_date_check/currency_rate_date_check.py
+@@ -43,7 +43,7 @@ class ResCurrency(models.Model):
+     _inherit = 'res.currency'
+ 
+     def _get_current_rate(
+-            self, cr, uid, ids, raise_on_no_rate=True, context=None):
++            self, cr, uid, ids, raise_on_no_rate=True, rate_type='rate', context=None):
+         if context is None:
+             context = {}
+         # We don't check if we don't have 'date' in context, which is
+@@ -89,4 +89,4 @@ class ResCurrency(models.Model):
+                                 % (date, currency.name, rate_date, max_delta))
+         # Now we call the regular function from the "base" module
+         return super(ResCurrency, self)._get_current_rate(
+-            cr, uid, ids, raise_on_no_rate=raise_on_no_rate, context=context)
++            cr, uid, ids, raise_on_no_rate=raise_on_no_rate, rate_type=rate_type, context=context)
